@@ -80,6 +80,9 @@ Through this project, I gained practical experience in:
 * Python data analysis libraries
 * Building end-to-end recommendation systems
 
+Large Files
+
+The dataset and precomputed model files are not included because they exceed GitHub's file size limits.
 
 If you found this project useful, feel free to star ⭐ the repository.
 
