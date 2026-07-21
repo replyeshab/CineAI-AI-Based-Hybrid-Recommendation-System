@@ -7,7 +7,6 @@
 ![Pandas](https://img.shields.io/badge/Pandas-Data%20Processing-lightgrey)
 ![NumPy](https://img.shields.io/badge/NumPy-Scientific%20Computing-blue)
 ![Status](https://img.shields.io/badge/Status-Active%20Development-success)
-![License](https://img.shields.io/badge/License-MIT-green)
 
 ---
 
