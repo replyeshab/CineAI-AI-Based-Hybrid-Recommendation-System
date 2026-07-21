@@ -164,21 +164,6 @@ Collaborative     Content       Popularity
 
 ---
 
-# Project Structure
-
-```
-CineAI/
-
-│── data/
-│── models/
-│── notebooks/
-│── artifacts/
-│── images/
-│── app/
-│── requirements.txt
-│── README.md
-```
-
 ---
 
 # Dataset
