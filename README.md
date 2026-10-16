@@ -1,270 +1,238 @@
-# CineAI
+🎬 CineAI v2: Enterprise Two-Stage Hybrid Recommender System
 
-> An intelligent **Hybrid Movie Recommendation System** that combines Collaborative Filtering, Content-Based Recommendation, Popularity Modeling, and Feature Engineering into a unified recommendation pipeline.
+CineAI v2 is a production-grade, two-stage hybrid recommendation engine built on the MovieLens 32M dataset. Inspired by industrial recommender architectures used at YouTube and Netflix, CineAI decouples candidate retrieval from machine learning re-ranking. It delivers personalized movie recommendations with native, zero-latency TreeSHAP Explainable AI (XAI).
 
-![Python](https://img.shields.io/badge/Python-3.11-blue)
-![Scikit-Learn](https://img.shields.io/badge/Scikit--Learn-ML-orange)
-![Pandas](https://img.shields.io/badge/Pandas-Data%20Processing-lightgrey)
-![NumPy](https://img.shields.io/badge/NumPy-Scientific%20Computing-blue)
-![Status](https://img.shields.io/badge/Status-Active%20Development-success)
+📐 System Architecture
 
----
-# CineAI
+graph TD
+    User([User Request / History]) --> Retrieval
 
-A **two-stage hybrid movie recommendation system** that combines collaborative filtering, content-based retrieval, popularity modeling, and feature-based ranking to generate personalized movie recommendations.
+    subgraph Retrieval [Stage 1: Multi-Vector Candidate Generation ~150 candidates]
+        ALS[Implicit ALS Collaborative Factors]
+        SVD[TF-IDF + TruncatedSVD Content Embeddings]
+        POP[IMDB-Weighted Popularity Baseline]
+    end
 
-CineAI is built using the **MovieLens 32M** dataset and follows a modular recommendation architecture inspired by modern large-scale recommender systems. The project emphasizes reproducible experimentation, leakage-free evaluation, and extensible system design.
+    Retrieval --> FeatureEng[Feature Engineering Pipeline - 18 Dense Features]
 
----
+    subgraph Ranking [Stage 2: Dual-Model ML Re-Ranking]
+        FeatureEng --> LambdaRank[LightGBM LambdaRANK Model - Top-N Ordering]
+        FeatureEng --> LikerModel[LightGBM Binary Model - Calibrated Match %]
+        FeatureEng --> SHAP[Native LightGBM TreeSHAP - pred_contrib=True]
+    end
 
-## Overview
+    LambdaRank --> Response
+    LikerModel --> Response
+    SHAP --> Response
 
-Most recommendation systems rely on a single recommendation strategy, making them susceptible to issues such as cold-start users, sparsity, or overspecialized recommendations.
+    subgraph Serving [Microservice Layer]
+        Response[Aggregated Recommendation Payload] --> API[FastAPI Microservice]
+        API --> UI[Netflix-Style Web Client + TMDB Posters]
+    end
 
-CineAI addresses these challenges by adopting a **two-stage recommendation pipeline**:
 
-- **Stage 1:** Retrieve relevant candidate movies using multiple recommendation engines.
-- **Stage 2:** Rank the retrieved candidates using engineered recommendation features.
+✨ Key Features & Algorithmic Highlights
 
-This separation enables each stage to evolve independently and mirrors the architecture used in production recommendation systems.
+1. Two-Stage Candidate Pipeline
 
----
+Stage 1 (Retrieval): Shrinks a catalogue of 200,000+ movies to ~150 high-quality candidates using a union of:
 
-## System Architecture
+Matrix Factorization: Implicit Alternating Least Squares (ALS, $d=64$) for latent user-item interaction signals.
 
-```
+Content Vector Space: TF-IDF text vectorization on movie titles, genres, and user tags, reduced via TruncatedSVD ($d=64$).
 
-                          MovieLens 32M
-                                │
-                                ▼
-                     Feature Engineering
-                                │
-                                ▼
-══════════════════════════════════════════════════════
-           Stage 1 : Candidate Generation
-══════════════════════════════════════════════════════
+Weighted Popularity: IMDB-style Bayesian average baseline (pop_w) to prevent candidate sparsity.
 
-     Collaborative Filtering (Truncated SVD)
-                     │
+Stage 2 (Re-ranking): A pairwise LightGBM LambdaRANK model scores candidate pairs across 18 engineered features (e.g., als_z, cont_z, gaff, gshare, year_gap, u_pos, i_mean) to optimize NDCG@10.
 
-        Content-Based Retrieval (TF-IDF)
-                     │
+2. Dual-Model Scoring System
 
-      Popularity-Based Recommendation
-                     │
-                     ▼
+Ordering Engine (ranker): LightGBM trained with lambdarank objective and NDCG metric to optimize relative item ordering.
 
-          Unified Candidate Pool
+Probability Engine (liker): A secondary binary LightGBM model trained on rated items ($\ge 4.0$ stars) to calculate a calibrated probability score, powering the "92% Match" UI badge.
 
-══════════════════════════════════════════════════════
-             Stage 2 : Candidate Ranking
-══════════════════════════════════════════════════════
+3. Native Zero-Latency Explainable AI (TreeSHAP)
 
-For every candidate movie:
+Eliminates runtime shap library dependencies by extracting exact SHAP values directly from LightGBM decision paths using pred_contrib=True.
 
-• Collaborative Score
-• Content Similarity Score
-• Genre Preference Score
-• Popularity Score
-• Average Rating
-• Rating Count
-• Recency Score
+Aggregates raw feature contributions into 5 human-readable explanation categories:
 
-                     │
-                     ▼
+Your genre taste (gaff, gshare)
 
-        Feature-Based Hybrid Ranking
+Similar to what you liked (cont, cont_z)
 
-                     │
-                     ▼
+People with similar taste (als, als_z)
 
-     Personalized Top-K Recommendations
+Community rating (i_mean, i_pos, base_pred, pop_w)
 
-```
+Era & profile fit (year_gap, u_year, u_cnt)
 
----
+4. Cold-Start Handling
 
-## Features
+New Items: Applies a Ridge regression bridge to map TF-IDF content vectors directly into ALS collaborative factor space for newly added movies with few ratings.
 
-### Two-Stage Recommendation Architecture
+New Users: Bypasses matrix operations to serve a genre-diverse, exploration-backed cold-start feed without runtime exceptions.
 
-Instead of directly recommending movies from a single model, CineAI first retrieves candidate movies and subsequently ranks them using multiple recommendation signals.
+5. Leak-Free Evaluation Protocol
 
----
+Evaluated strictly using a chronological per-user split (Oldest 75% train, Middle 10% validation, Newest 15% test) to ensure no future data leaks into model training.
 
-### Collaborative Filtering
+📊 Evaluation Metrics
 
-- Matrix Factorization
-- Truncated Singular Value Decomposition (SVD)
-- Captures latent user-item interactions
+The system is evaluated across two distinct evaluation protocols on unseen test-period ratings:
 
----
+Protocol
 
-### Content-Based Retrieval
+Strategy
 
-- TF-IDF movie representation
-- Cosine similarity search
-- Content-aware recommendations
+Goal
 
----
+Metric Focus
 
-### Popularity Modeling
+Protocol A (Taste)
 
-Popularity candidates are generated using IMDb weighted ratings instead of simple averages to reduce bias toward movies with few interactions.
+Ranks items the user actually rated later.
 
----
+Tests accuracy of high-rating predictions.
 
-### Personalized Genre Modeling
+NDCG@10, HitRate@10, Precision@10
 
-User-specific genre preferences are estimated from historical interactions and incorporated into the final ranking stage.
+Protocol B (Discovery)
 
----
+Ranks the entire 200,000+ catalog.
 
-### Hybrid Feature-Based Ranking
+Tests retrieval and diversity across the platform.
 
-Each recommendation candidate is represented using multiple engineered features.
+Catalog Coverage, Novelty (Bits), Genre Diversity
 
-| Feature | Description |
-|----------|-------------|
-| Collaborative Score | Latent user preference |
-| Content Score | Content similarity |
-| Genre Preference Score | User affinity toward movie genres |
-| Average Rating | Historical movie quality |
-| Rating Count | Confidence estimate |
-| Popularity Score | Global popularity |
-| Recency Score | Preference toward recent movies |
+📁 Repository Structure
 
-The ranking engine combines these features to generate the final recommendation list.
+.
+├── app.py                  # FastAPI REST microservice wrapper
+├── cineai.py               # Core algorithmic engine (ALS, SVD, LightGBM, TreeSHAP)
+├── cineai_widget.html      # Netflix-style web frontend (Vanilla JS / CSS3)
+├── CineAI_v2_colab.ipynb   # Model training & evaluation pipeline (Colab ready)
+├── requirements.txt        # Production dependencies
+└── README.md               # Documentation
 
----
 
-### Cold-Start Recommendation
+🚀 Quickstart & Setup
 
-Users with limited interaction history are handled using popularity-based recommendations generated through IMDb weighted ratings.
+1. Prerequisites
 
----
+Python 3.10+
 
-## Recommendation Pipeline
+Virtual environment tool (venv or conda)
 
-1. Dataset preprocessing
-2. Feature engineering
-3. Train / Validation / Test split
-4. Collaborative candidate generation
-5. Content candidate generation
-6. Popularity candidate generation
-7. Candidate merging
-8. Feature construction
-9. Hybrid ranking
-10. Top-K recommendation generation
-11. Offline evaluation
+2. Installation
 
----
+# Clone the repository
+git clone https://github.com/your-username/CineAI-v2.git
+cd CineAI-v2
 
-## Evaluation
+# Install dependencies
+pip install -r requirements.txt
 
-The project follows a leakage-free evaluation protocol.
 
-Training interactions are used exclusively for model construction.
+3. Local Model Training
 
-Validation interactions are reserved for model tuning.
+To train the model on the MovieLens 32M dataset and export the serialized artifact (rs_full.pkl), run the training notebook CineAI_v2_colab.ipynb.
 
-Testing interactions are used only for final offline evaluation.
+4. Running the FastAPI Server
 
-### Current Evaluation Metrics
+Point the environment variable CINEAI_MODEL to your dumped model artifact and launch Uvicorn:
 
-| Metric |
-|---------|
-| Precision@K |
-| Recall@K |
-| MAP@K |
-| NDCG@K |
-| Coverage |
-| Latency |
-| Novelty |
-| Diversity |
-| Hit Rate@K |
+export CINEAI_MODEL="./rs_full.pkl"
+uvicorn app:app --host 0.0.0.0 --port 8000 --reload
 
----
 
-## Dataset
+The server will start at http://localhost:8000. You can access interactive Swagger API documentation at http://localhost:8000/docs.
 
-MovieLens 32M
+5. Launching the Web UI
 
-- 32 Million Ratings
-- 2 Million Tag Applications
+Open cineai_widget.html in your text editor.
 
----
+Set your backend URL in JavaScript:
 
-## Technology Stack
+const API_URL = "http://localhost:8000"; // Or your production URL
 
-### Machine Learning
 
-- Scikit-learn
-- NumPy
-- Pandas
-- SciPy
+(Optional) Add a free TMDB API Key (TMDB_API_KEY) to enable real-time movie poster fetching.
 
-### Recommendation Algorithms
+Double-click cineai_widget.html to open it in any web browser.
 
-- Truncated SVD
-- TF-IDF
-- Cosine Similarity
+📡 API Specification
 
-### Engineering
+POST /recommend
 
-- Sparse Matrix Operations
-- Joblib Serialization
-- Modular Pipeline Design
+Generates personalized recommendations based on user rating history, genre filters, or natural language prompts.
 
----
+Request Payload:
 
+{
+  "history": [
+    {"movieId": 1, "rating": 5.0},
+    {"movieId": 257, "rating": 4.5}
+  ],
+  "genres": ["Sci-Fi", "Action"],
+  "query": "slow burn psychological space thriller",
+  "top_n": 10
+}
 
----
 
-## Engineering Highlights
+Response Payload:
 
-- Two-stage recommendation architecture
-- Hybrid recommendation pipeline
-- Leakage-free evaluation protocol
-- Modular candidate generation
-- Feature-based ranking
-- Cold-start recommendation strategy
-- Sparse matrix optimization
-- Artifact serialization for reproducibility
+{
+  "items": [
+    {
+      "movieId": 1090,
+      "title": "Moon",
+      "year": 2009,
+      "genres": ["Drama", "Mystery", "Sci-Fi"],
+      "score": 1.42,
+      "match": 94,
+      "mode": "personalized",
+      "because": {
+        "movieId": 1,
+        "title": "The Matrix"
+      },
+      "reasons": [
+        {
+          "group": "Similar to what you liked",
+          "text": "Close in style to movies you rated highly",
+          "impact": 0.52
+        }
+      ],
+      "contributions": [
+        {"group": "Your genre taste", "value": 0.31},
+        {"group": "Similar to what you liked", "value": 0.52},
+        {"group": "People with similar taste", "value": 0.18},
+        {"group": "Community rating", "value": 0.22},
+        {"group": "Era & profile fit", "value": 0.05}
+      ]
+    }
+  ]
+}
 
----
 
-## Current Status
+🛠️ Deployment
 
-Implemented
+Docker Deployment
 
-- Feature Engineering
-- Content-Based Recommendation
-- Collaborative Filtering
-- Popularity Recommendation
-- Two-Stage Hybrid Recommendation
-- Cold-Start Recommendation
-- Offline Evaluation Framework
+FROM python:3.10-slim
 
-Planned
+WORKDIR /app
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
 
-- Learning-to-Rank (XGBoost / LightGBM)
-- Explainable Recommendations
-- ANN Retrieval (FAISS)
-- FastAPI Deployment
-- Docker Support
+COPY app.py cineai.py rs_full.pkl ./
 
----
+ENV CINEAI_MODEL=/app/rs_full.pkl
+EXPOSE 8000
 
-## Future Work
+CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8000"]
 
-Future improvements include:
 
-- Learning-to-Rank for candidate ranking
-- Explainable recommendation generation
-- Approximate nearest-neighbor retrieval
-- Real-time recommendation service
-- Online A/B evaluation
-- User feedback incorporation
+📄 License
 
----
+Distributed under the MIT License. See LICENSE for more information.
