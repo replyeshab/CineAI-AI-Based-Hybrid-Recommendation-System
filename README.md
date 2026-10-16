@@ -1,5 +1,5 @@
 
-# 🎬 CineAI — Explainable Movie Recommendations
+# 🎬 CineAI — Explainable Hybrid Movie Recommendations
 
 **Personalized movie recommendations with interpretable ranking, content-based retrieval, and collaborative filtering.**
 
