@@ -6,7 +6,6 @@
 CineAI is a hybrid movie recommendation system that combines user preferences, movie content, collaborative signals, and learning-to-rank to generate personalized recommendations. It also exposes feature-level explanations to make recommendations easier to understand.
 
 Users can rate movies, select genres, explore titles, and describe the kind of film they want to watch. The project includes a Python recommendation pipeline, a FastAPI backend, and a lightweight web interface.
-
 **Project status:** Tested prototype; public deployment coming soon.
 
 ## ✨ Features
