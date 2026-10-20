@@ -1,5 +1,5 @@
 
-# 🎬 CineAI — Explainable Hybrid Movie Recommendations
+# CineAI — Explainable Hybrid Movie Recommendations
 
 **Personalized movie recommendations with interpretable ranking, content-based retrieval, and collaborative filtering.**
 
@@ -8,7 +8,7 @@ CineAI is a hybrid movie recommendation system that combines user preferences, m
 Users can rate movies, select genres, explore titles, and describe the kind of film they want to watch. The project includes a Python recommendation pipeline, a FastAPI backend, and a lightweight web interface.
 **Project status:** Tested prototype; public deployment coming soon.
 
-## ✨ Features
+## Features
 
 - **Hybrid recommendations:** Combines implicit ALS collaborative filtering, content similarity, and popularity-based candidate retrieval.
 - **Learning-to-rank:** Uses LightGBM LambdaRank to order candidate movies.
@@ -21,7 +21,7 @@ Users can rate movies, select genres, explore titles, and describe the kind of f
 - **Web interface:** Supports movie ratings, genre selection, recommendation cards, and expandable explanations.
 - **REST API:** Exposes model functionality through FastAPI.
 
-## 🧠 How It Works
+##  How It Works
 
 CineAI follows a multi-stage recommendation pipeline:
 
@@ -34,7 +34,7 @@ CineAI follows a multi-stage recommendation pipeline:
 7. **Explain the ranking:** Aggregate feature-level TreeSHAP contributions into interpretable groups.
 8. **Serve recommendations:** Return results through FastAPI to the browser interface.
 
-## 🏗️ Architecture
+##  Architecture
 
 ```mermaid
 flowchart TD
@@ -67,7 +67,7 @@ flowchart TD
 | Maximal Marginal Relevance | Improves diversity within the final recommendation list. |
 | FastAPI | Exposes recommendation, search, onboarding, genre metadata, and health-check endpoints. |
 
-## 🔍 Explainable AI
+##  Explainable AI
 
 CineAI organizes feature contributions into five groups:
 
@@ -81,7 +81,7 @@ The recommendation backend obtains feature contributions through LightGBM's nati
 
 **Important:** In the trained-model path, explanations are derived from model contributions. The frontend's demo mode instead uses sample recommendations and predefined explanations.
 
-## 🛠️ Tech Stack
+##  Tech Stack
 
 **Language:** Python
 
@@ -97,7 +97,7 @@ The recommendation backend obtains feature contributions through LightGBM's nati
 
 **Training Environment:** Google Colab and Google Drive
 
-## 📁 Repository Structure
+## Repository Structure
 
 ```text
 CineAI/
@@ -113,7 +113,7 @@ CineAI/
 - `cineai_widget.html` — Browser-based interface.
 - `CineAI_v2_colab.ipynb` — Training, evaluation, visualization, and API-launch workflow.
 
-## 📊 Dataset
+##  Dataset
 
 The training notebook is configured for **MovieLens 32M** from GroupLens.
 
@@ -144,7 +144,7 @@ MyDrive/CineAI/
 
 The notebook creates the artifact directory when training begins.
 
-## 🚀 Run the Training Pipeline
+##  Run the Training Pipeline
 
 The supplied notebook is designed for Google Colab and uses checkpoints to preserve the trained base model.
 
@@ -156,7 +156,7 @@ The supplied notebook is designed for Google Colab and uses checkpoints to prese
 
 Training time depends on the runtime and configuration. The notebook is designed to reuse the base checkpoint when available.
 
-## ⚙️ Run the API Locally
+##  Run the API Locally
 
 A trained model artifact is required for live recommendations.
 
@@ -216,7 +216,7 @@ curl -X POST "http://127.0.0.1:8000/recommend" \
 
 The movie IDs must exist in the trained model's catalogue. An empty rating history is accepted for the cold-start path.
 
-## 📈 Evaluation Methodology
+##  Evaluation Methodology
 
 The notebook uses a per-user chronological split:
 
@@ -247,7 +247,7 @@ The notebook contains the evaluation routines, but published benchmark values sh
 
 Before reporting numerical claims, record the measured results, dataset version, evaluation configuration, and runtime. Do not substitute assumed values for measured Precision@K, Recall@K, NDCG, or latency.
 
-## 🌐 Deployment Status
+##  Deployment Status
 
 **Public demo: Coming soon.**
 
@@ -261,7 +261,7 @@ The current frontend can communicate with the FastAPI service through a configur
 
 The interface currently stores ratings in browser `localStorage`; this is not a cloud-synced user profile.
 
-## ⚠️ Limitations and Future Work
+## Limitations and Future Work
 
 CineAI is a tested portfolio prototype, not yet a production-grade recommendation service.
 
@@ -275,7 +275,7 @@ Potential improvements include:
 - Configure production CORS, stable hosting, logging, monitoring, and error handling.
 - Add persistent user profiles if multi-device personalization is required.
 
-## 📚 References
+##  References
 
 - [GroupLens Research — MovieLens 32M](https://grouplens.org/datasets/movielens/32m/)
 - [LightGBM Documentation](https://lightgbm.readthedocs.io/)
