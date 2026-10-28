@@ -239,13 +239,23 @@ The implementation includes:
 - **Cold-start evaluation:** Simulates users with 0, 1, 3, 5, 10, or 20 available ratings.
 - **Baseline comparisons:** Compares recommendation signals against ALS, popularity, and a user/item-mean baseline where applicable.
 
-The evaluation code also examines preference-confidence thresholds and the associated precision/coverage trade-off.
+### Results## 📊 Evaluation & Ongoing Improvements
 
-### Results
+CineAI evaluates taste-based recommendations and movie discovery separately using Precision@K, Recall@K, NDCG@K, and Hit Rate@K, with comparisons against collaborative-filtering and popularity-based baselines.
 
-The notebook contains the evaluation routines, but published benchmark values should come from the actual completed run.
+### Current Findings
+- The LightGBM taste model shows promising results against the evaluated baselines under the current taste protocol.
+- The discovery pipeline has room for improvement, with the current LightGBM ranker trailing ALS on key ranking metrics.
+- These findings are guiding the next round of experiments and pipeline improvements.
 
-Before reporting numerical claims, record the measured results, dataset version, evaluation configuration, and runtime. Do not substitute assumed values for measured Precision@K, Recall@K, NDCG, or latency.
+### 🚧 Currently Working On
+- **Improving discovery ranking:** Refining the discovery pipeline to improve recommendation relevance and ranking quality.
+- **Feature engineering:** Investigating how recommendation signals, including recency, can contribute to discovery performance.
+- **Data quality:** Validating and improving the training data to support more reliable evaluation.
+- **Model evaluation:** Comparing updated implementations against existing baselines under consistent evaluation conditions.
+- **Pipeline consistency:** Ensuring training and inference use compatible features and processing logic.
+
+CineAI is an ongoing project. Improvements to discovery performance will be evaluated experimentally rather than assumed from individual feature changes.
 
 ##  Deployment Status
 
@@ -258,22 +268,6 @@ The current frontend can communicate with the FastAPI service through a configur
 - Keep model artifacts and datasets separate from the source repository.
 - Verify the complete user flow against the deployed model.
 - Document the public demo URL here after deployment.
-
-The interface currently stores ratings in browser `localStorage`; this is not a cloud-synced user profile.
-
-## Limitations and Future Work
-
-CineAI is a tested portfolio prototype, not yet a production-grade recommendation service.
-
-Potential improvements include:
-
-- Evaluate transformer-based text embeddings against the current TF-IDF/SVD search baseline.
-- Improve query-conditioned recommendations for users with no rating history.
-- Add automated unit and API integration tests.
-- Pin dependency versions and provide a reproducible installation file.
-- Publish measured offline metrics and representative explanation plots.
-- Configure production CORS, stable hosting, logging, monitoring, and error handling.
-- Add persistent user profiles if multi-device personalization is required.
 
 ##  References
 
