@@ -1,0 +1,76 @@
+x-logging: &logging { driver: json-file, options: { max-size: "10m", max-file: "3" } }
+x-hardening: &hardening { cap_drop: [ALL], security_opt: ["no-new-privileges:true"], logging: *logging }
+x-api-env: &api-env
+  ENV: "${ENV:-prod}"                      # prod refuses to start with insecure settings; use ENV=dev for http://localhost
+  DATABASE_URL: postgresql+asyncpg://cineai:${POSTGRES_PASSWORD}@db:5432/cineai
+  REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379/0
+  JWT_SECRET: "${JWT_SECRET:?set in .env}"
+  APP_URL: "${APP_URL:-http://localhost:8080}"
+  COOKIE_SECURE: "${COOKIE_SECURE:-true}"
+  GOOGLE_CLIENT_ID: "${GOOGLE_CLIENT_ID:-}"
+  OTP_REQUIRED: "${OTP_REQUIRED:-true}"
+  TMDB_KEY: "${TMDB_KEY:-}"
+  SMTP_HOST: "${SMTP_HOST:-}"
+  SMTP_PORT: "${SMTP_PORT:-587}"
+  SMTP_USER: "${SMTP_USER:-}"
+  SMTP_PASS: "${SMTP_PASS:-}"
+  MAIL_FROM: "${MAIL_FROM:-CineAI <no-reply@localhost>}"
+  MODEL_PATH: /model/rs_full.pkl
+  SEMANTIC_PATH: /model/semantic.npz
+  LINKS_PATH: /model/links.csv
+
+services:
+  db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment: { POSTGRES_USER: cineai, POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:?set in .env}", POSTGRES_DB: cineai }
+    volumes: [pgdata:/var/lib/postgresql/data]
+    healthcheck: { test: ["CMD-SHELL", "pg_isready -U cineai"], interval: 5s, retries: 10 }
+    logging: *logging
+
+  redis:                                   # cache + shared rate limits only (no persistence); the app keeps working if it dies
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--requirepass", "${REDIS_PASSWORD:?set in .env}", "--maxmemory", "128mb", "--maxmemory-policy", "allkeys-lru", "--save", ""]
+    environment: { REDISCLI_AUTH: "${REDIS_PASSWORD}" }
+    healthcheck: { test: ["CMD-SHELL", "redis-cli ping | grep -q PONG"], interval: 5s, retries: 10 }
+    read_only: true
+    tmpfs: [/data]
+    <<: *hardening
+
+  migrate:                                 # one-shot: applies Alembic migrations before the API starts (no startup races between replicas)
+    build: ./backend
+    command: ["alembic", "upgrade", "head"]
+    environment: *api-env
+    depends_on: { db: { condition: service_healthy } }
+    restart: "no"
+    logging: *logging
+
+  api:
+    build: ./backend
+    restart: unless-stopped
+    environment: *api-env
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+      redis: { condition: service_healthy }
+    volumes: ["./model:/model:ro"]         # rs_full.pkl + semantic.npz + links.csv
+    read_only: true
+    tmpfs: [/tmp]
+    <<: *hardening
+
+  web:
+    build: { context: ., args: { VITE_GOOGLE_CLIENT_ID: "${GOOGLE_CLIENT_ID:-}" } }
+    restart: unless-stopped
+    depends_on: [api]
+    ports: ["8080:8080"]                   # put Caddy / Cloudflare / a cloud load balancer in front for HTTPS
+    <<: *hardening
+
+  backup:                                  # daily pg_dump, keeps 7 daily / 4 weekly / 3 monthly in ./backups
+    image: prodrigestivill/postgres-backup-local:17
+    restart: unless-stopped
+    environment: { POSTGRES_HOST: db, POSTGRES_DB: cineai, POSTGRES_USER: cineai, POSTGRES_PASSWORD: "${POSTGRES_PASSWORD}", SCHEDULE: "@daily", BACKUP_KEEP_DAYS: 7, BACKUP_KEEP_WEEKS: 4, BACKUP_KEEP_MONTHS: 3 }
+    volumes: ["./backups:/backups"]
+    depends_on: { db: { condition: service_healthy } }
+    logging: *logging
+
+volumes: { pgdata: {} }

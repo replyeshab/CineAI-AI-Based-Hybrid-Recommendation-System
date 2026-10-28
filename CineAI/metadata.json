@@ -1,0 +1,6 @@
+{
+  "name": "CineAI - Hybrid Movie Recommendation & Streaming Hub",
+  "description": "Cinema-grade movie recommendation platform featuring MovieLens 32M hybrid collaborative filtering, TF-IDF content similarity, and an explainable AI inspector.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
