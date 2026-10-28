@@ -239,7 +239,7 @@ The implementation includes:
 - **Cold-start evaluation:** Simulates users with 0, 1, 3, 5, 10, or 20 available ratings.
 - **Baseline comparisons:** Compares recommendation signals against ALS, popularity, and a user/item-mean baseline where applicable.
 
-### Results## 📊 Evaluation & Ongoing Improvements
+### Results Evaluation & Ongoing Improvements
 
 CineAI evaluates taste-based recommendations and movie discovery separately using Precision@K, Recall@K, NDCG@K, and Hit Rate@K, with comparisons against collaborative-filtering and popularity-based baselines.
 
