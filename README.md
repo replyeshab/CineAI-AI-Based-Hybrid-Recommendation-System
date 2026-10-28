@@ -247,7 +247,7 @@ CineAI evaluates taste-based recommendations and movie discovery separately usin
 - The LightGBM taste model shows promising results against the evaluated baselines under the current taste protocol.
 - The discovery pipeline has room for improvement, with the current LightGBM ranker trailing ALS on key ranking metrics.
 - These findings are guiding the next round of experiments and pipeline improvements.
-  ![Movie Recommendations](Screenshot 2026-10-28 161911.png)
+  ![Movie Recommendations](Modelresults_v1.png)
 
 ### 🚧 Currently Working On
 - **Improving discovery ranking:** Refining the discovery pipeline to improve recommendation relevance and ranking quality.
