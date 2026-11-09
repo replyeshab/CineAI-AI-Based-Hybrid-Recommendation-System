@@ -1,6 +1,0 @@
-.env
-model/
-node_modules/
-dist/
-__pycache__/
-backups/
